@@ -19,7 +19,8 @@ from sklearn.model_selection import GridSearchCV
 from xgboost import XGBClassifier
 from sklearn.metrics import precision_recall_curve
 from sklearn.calibration import CalibratedClassifierCV
-from sklearn.metrics import make_scorer, fbeta_score
+from sklearn.metrics import make_scorer, fbeta_score, roc_auc_score, roc_curve
+
 
 
 random.seed(123)
@@ -27,6 +28,13 @@ random.seed(123)
 df = pd.read_csv(r"C:\Users\Massimo Camuso\Desktop\Academics\Spring 2025\CIS 3715 (Principles of Data Science)\Final Project\preprocessed_loan_data.csv")
 
 df.info()
+df = df.dropna()
+# Drop LoanID and any other non-predictive columns
+df = df.drop(['LoanID'], axis=1)
+# Convert to numeric
+df['Age'] = pd.to_numeric(df['Age'])
+df['Income'] = pd.to_numeric(df['Income'])
+df['LoanAmount'] = pd.to_numeric(df['LoanAmount'])
 
 counts = df['Default'].value_counts()
 print(counts) # Target variable is heavily imbalanced 
@@ -195,7 +203,7 @@ for reg in regularization_coefficient:
     print(f"Best Reg for F1={best_reg_f1}")
 
 '''
-
+'''
 final_clf = LogisticRegression(
     penalty='elasticnet',
     l1_ratio=0.2,
@@ -214,8 +222,36 @@ print(f"Coefficients: {final_clf.coef_}, Intercept: {final_clf.intercept_}")
 print("Test Precision:", precision_score(y_test, y_test_pred))
 print("Test Recall:", recall_score(y_test, y_test_pred))
 print("Test F1:", f1_score(y_test, y_test_pred))
+print("Test AUC:", roc_auc_score(y_test, y_test_probs))
 
 
+#ROC Curve Plot
+plt.style.use('seaborn-v0_8-whitegrid')
+
+
+fpr, tpr, _ = roc_curve(y_test, y_test_probs)
+auc = roc_auc_score(y_test, y_test_probs) 
+
+# --- Create the plot ---
+plt.figure(figsize=(8, 6)) # Create a good aspect ratio
+
+# Plot the ROC curve for your best model
+plt.plot(fpr, tpr, color='darkorange', lw=2.5, label=f'Logistic Regression Model (AUC = {auc:.2f})')
+
+# Plot the random guessing line
+plt.plot([0, 1], [0, 1], color='navy', lw=2.5, linestyle='--')
+
+# --- Add professional labels and title ---
+plt.xlabel('False Positive Rate (FPR)', fontsize=12)
+plt.ylabel('True Positive Rate (Recall)', fontsize=12)
+plt.title('Loan Default Prediction: Model Performance', fontsize=16, fontweight='bold')
+plt.legend(loc='lower right', fontsize=11)
+
+# Ensure the plot has a tight layout and save it
+plt.tight_layout()
+plt.savefig('upwork_thumbnail_roc.png', dpi=300) # Save as high-resolution PNG
+plt.show()
+'''
 
 
 
@@ -259,7 +295,7 @@ y_probs_rf = best_rf.predict_proba(X_test)[:, 1]  # Probabilities for class 1
 
 precision, recall, thresholds = precision_recall_curve(y_test, y_probs_rf)
 
-f1_5_scores = (2.25 * precision * recall) / (1.25 * precision + recall + 1e-9)
+f1_5_scores = (2.25 * precision * recall) / (2.25 * precision + recall + 1e-9)
 best_thresh = thresholds[np.argmax(f1_5_scores)]
 print("Best Thresh:", best_thresh)
 
@@ -267,9 +303,9 @@ print("Best Thresh:", best_thresh)
 y_pred_rf = (y_probs_rf >= best_thresh).astype(int)
 print("RF Precision:", precision_score(y_test, y_pred_rf))
 print("RF Recall:", recall_score(y_test, y_pred_rf))
-print("RF F1.5:", fbeta_score(y_test, y_pred_rf, beta=1.5))
+print("RF F1.5:", fbeta_score(y_test, y_pred_rf, beta=2.5))
+print("Test AUC:", roc_auc_score(y_test, y_probs_rf))
 '''
-
 '''
 #PRECISION RECALL CURVE FOR RANDOM FOREST
 precision, recall, thresholds = precision_recall_curve(y_test, y_probs_rf)
@@ -330,7 +366,7 @@ y_probs_calibrated = calibrated.predict_proba(X_test)[:, 1]
 
 # Calculate F1.5 at different thresholds
 precision, recall, thresholds = precision_recall_curve(y_test, y_probs_calibrated)
-f2_scores = (3.5 * precision * recall) / (2.5 * precision + recall + 1e-9)  # F2 formula
+f2_scores = (1.5 * precision * recall) / (1.5 * precision + recall + 1e-9)  # F2 formula
 
 # Find the best threshold
 best_thresh = thresholds[np.argmax(f2_scores)]
@@ -343,8 +379,8 @@ y_pred = (y_probs_calibrated >= best_thresh).astype(int)
 print("F2-Score:", fbeta_score(y_test, y_pred, beta=1.5))
 print("Precision:", precision_score(y_test, y_pred))
 print("Recall:", recall_score(y_test, y_pred))
+print("Test AUC:", roc_auc_score(y_test, y_probs_calibrated))
 '''
-
 '''
 #PRECISION RECALL CURVE
 precision, recall, thresholds = precision_recall_curve(y_test, y_probs)
