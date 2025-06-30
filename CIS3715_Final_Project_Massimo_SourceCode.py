@@ -215,42 +215,14 @@ final_clf = LogisticRegression(
 final_clf.fit(X_train_all, y_train_balanced)
 y_test_probs = final_clf.predict_proba(X_test_all)[:, 1]
 y_test_pred = (y_test_probs >= 0.6).astype(int)
-
+lr_auc = roc_auc_score(y_test, y_test_probs)
 
 print(f"Coefficients: {final_clf.coef_}, Intercept: {final_clf.intercept_}")    
 
 print("Test Precision:", precision_score(y_test, y_test_pred))
 print("Test Recall:", recall_score(y_test, y_test_pred))
 print("Test F1:", f1_score(y_test, y_test_pred))
-print("Test AUC:", roc_auc_score(y_test, y_test_probs))
-
-
-#ROC Curve Plot
-plt.style.use('seaborn-v0_8-whitegrid')
-
-
-fpr, tpr, _ = roc_curve(y_test, y_test_probs)
-auc = roc_auc_score(y_test, y_test_probs) 
-
-# --- Create the plot ---
-plt.figure(figsize=(8, 6)) # Create a good aspect ratio
-
-# Plot the ROC curve for your best model
-plt.plot(fpr, tpr, color='darkorange', lw=2.5, label=f'Logistic Regression Model (AUC = {auc:.2f})')
-
-# Plot the random guessing line
-plt.plot([0, 1], [0, 1], color='navy', lw=2.5, linestyle='--')
-
-# --- Add professional labels and title ---
-plt.xlabel('False Positive Rate (FPR)', fontsize=12)
-plt.ylabel('True Positive Rate (Recall)', fontsize=12)
-plt.title('Loan Default Prediction: Model Performance', fontsize=16, fontweight='bold')
-plt.legend(loc='lower right', fontsize=11)
-
-# Ensure the plot has a tight layout and save it
-plt.tight_layout()
-plt.savefig('upwork_thumbnail_roc.png', dpi=300) # Save as high-resolution PNG
-plt.show()
+print("Test AUC:", lr_auc)
 '''
 
 
@@ -298,13 +270,13 @@ precision, recall, thresholds = precision_recall_curve(y_test, y_probs_rf)
 f1_5_scores = (2.25 * precision * recall) / (2.25 * precision + recall + 1e-9)
 best_thresh = thresholds[np.argmax(f1_5_scores)]
 print("Best Thresh:", best_thresh)
-
+rf_auc = roc_auc_score(y_test, y_probs_rf)
 
 y_pred_rf = (y_probs_rf >= best_thresh).astype(int)
 print("RF Precision:", precision_score(y_test, y_pred_rf))
 print("RF Recall:", recall_score(y_test, y_pred_rf))
 print("RF F1.5:", fbeta_score(y_test, y_pred_rf, beta=2.5))
-print("Test AUC:", roc_auc_score(y_test, y_probs_rf))
+print("Test AUC:", rf_auc)
 '''
 '''
 #PRECISION RECALL CURVE FOR RANDOM FOREST
@@ -371,7 +343,7 @@ f2_scores = (1.5 * precision * recall) / (1.5 * precision + recall + 1e-9)  # F2
 # Find the best threshold
 best_thresh = thresholds[np.argmax(f2_scores)]
 print("Best threshold for F2:", best_thresh)
-
+xgb_auc = roc_auc_score(y_test, y_probs_calibrated)
 
 y_pred = (y_probs_calibrated >= best_thresh).astype(int)
 # Apply to predictions
@@ -379,7 +351,7 @@ y_pred = (y_probs_calibrated >= best_thresh).astype(int)
 print("F2-Score:", fbeta_score(y_test, y_pred, beta=1.5))
 print("Precision:", precision_score(y_test, y_pred))
 print("Recall:", recall_score(y_test, y_pred))
-print("Test AUC:", roc_auc_score(y_test, y_probs_calibrated))
+print("Test AUC:", xgb_auc)
 '''
 '''
 #PRECISION RECALL CURVE
@@ -455,5 +427,43 @@ for i, (model, values) in enumerate(metrics.items()):
         )
 
 plt.tight_layout()
+plt.show()
+'''
+'''
+#ROC Curve Plot
+plt.style.use('seaborn-v0_8-whitegrid')
+
+
+lr_fpr, lr_tpr, _ = roc_curve(y_test, y_test_probs)
+lr_auc = lr_auc 
+
+rf_fpr, rf_tpr, _ = roc_curve(y_test, y_probs_rf)
+rf_auc = rf_auc 
+
+xgb_fpr, xgb_tpr, _ = roc_curve(y_test, y_probs_calibrated)
+xgb_auc = xgb_auc 
+
+
+plt.figure(figsize=(8, 6))
+
+
+plt.plot(lr_fpr, lr_tpr, color='darkorange', lw=2.5, label=f'Logistic Regression (AUC = {lr_auc:.2f})')
+
+# Plot the other models with slightly less emphasis
+plt.plot(rf_fpr, rf_tpr, color='cornflowerblue', lw=2, linestyle='--', label=f'Random Forest (AUC = {rf_auc:.2f})')
+plt.plot(xgb_fpr, xgb_tpr, color='green', lw=2, linestyle=':', label=f'XGBoost (AUC = {xgb_auc:.2f})')
+
+# Plot the random guessing line
+plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+
+# --- Add professional labels and a new title ---
+plt.xlabel('False Positive Rate (FPR)', fontsize=12)
+plt.ylabel('True Positive Rate (Recall)', fontsize=12)
+plt.title('Loan Default Prediction: Model Comparison', fontsize=16, fontweight='bold')
+plt.legend(loc='lower right', fontsize=11)
+
+# Ensure tight layout and save
+plt.tight_layout()
+plt.savefig('upwork_thumbnail_comparison.png', dpi=300)
 plt.show()
 '''
