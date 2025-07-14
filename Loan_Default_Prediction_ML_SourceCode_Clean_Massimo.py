@@ -226,6 +226,34 @@ print(f"Best RF Hyperparameters (for F1.5 score): {grid_search_rf.best_params_}"
 
 best_rf_params = grid_search_rf.best_params_
 best_rf = RandomForestClassifier(**best_rf_params, random_state=SEED)
+rf_model = grid_search_rf.best_estimator_
+
+
+#feature importance graph function:
+def plot_feature_importance(pipeline, top_n=20):
+    
+    model = pipeline.named_steps['classifier']
+    preprocessor = pipeline.named_steps['preprocessor']
+
+    feature_names = preprocessor.get_feature_names_out()
+
+    importances = model.feature_importances_
+
+    feature_importance_df = pd.DataFrame({
+        'feature': feature_names,
+        'importance': importances
+    }).sort_values('importance', ascending=False).head(top_n)
+
+    plt.figure(figsize=(12, 8))
+    sns.barplot(x='importance', y='feature', data=feature_importance_df)
+    plt.title(f'Top {top_n} Feature Importances')
+    plt.xlabel('Importance')
+    plt.ylabel('Feature')
+    plt.grid(True)
+    plt.show()
+
+
+plot_feature_importance(rf_model, top_n=20)
 
 
 #Threshold tuning for RF
@@ -336,6 +364,8 @@ grid_search_xgb = GridSearchCV(
 grid_search_xgb.fit(X_train, y_train)
 print("GridSearchCV for XGBoost completed.")
 print(f"Best XGBoost Hyperparameters (for F1.5 score): {grid_search_xgb.best_params_}")
+xgb_model = grid_search.xgb.best_estimator_
+plot_feature_importance(xgb_model, top_n=20)
 
 
 #Threshold Tuning
