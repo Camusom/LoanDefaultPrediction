@@ -156,7 +156,7 @@ plt.show()
 
 
 #testing logistic regression
-optimal_threshold = 0.56
+
 y_probas_test = best_model.predict_proba(X_test)[:, 1]
 
 y_pred_test_final = (y_probas_test >= optimal_threshold).astype(int)
@@ -438,4 +438,5 @@ plt.ylabel('Actual Label')
 plt.xlabel('Predicted Label')
 plt.title('XGBoost Final Confusion Matrix')
 plt.show()
+
 '''
